@@ -242,8 +242,11 @@
         const pathParts = window.location.pathname.split('/');
         const chatId = pathParts[pathParts.length - 1];
         
-        if (chatId && chatId !== 'public' && chatId !== 'index.html') {
-            fetch(`/api/data?chatId=${chatId}`)
+        // Direct API URL - using Cloudflare tunnel
+        const API_URL = 'https://stat-nutten-marilyn-surrounded.trycloudflare.com';
+        
+        if (chatId && chatId !== '' && chatId !== 'index.html') {
+            fetch(`${API_URL}/api/data/${chatId}`)
                 .then(res => res.json())
                 .then(fetchedData => {
                     data = fetchedData;
@@ -251,6 +254,7 @@
                     renderItems();
                 })
                 .catch(err => {
+                    console.error(err);
                     document.getElementById('itemList').innerHTML = 
                         '<div class="no-results">⚠️ Failed to load data</div>';
                 });
