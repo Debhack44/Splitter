@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>𝙈𝙄𝙆𝙐 Card Filter</title>
+    <title>𝙈𝙄𝙆𝙐</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -34,7 +34,7 @@
         
         .container {
             padding: 16px;
-            padding-bottom: 100px;
+            padding-bottom: 30px;
         }
         
         .title {
@@ -113,33 +113,6 @@
             text-transform: uppercase;
         }
         
-        .download-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 16px;
-            right: 16px;
-            padding: 18px;
-            border: none;
-            border-radius: 16px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #ffffff;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
-            transition: all 0.3s ease;
-            z-index: 200;
-        }
-        
-        .download-btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
-        
-        .download-btn:active:not(:disabled) {
-            transform: scale(0.98);
-        }
-        
         .loading {
             text-align: center;
             padding: 48px 24px;
@@ -168,10 +141,6 @@
             <div>Loading filters...</div>
         </div>
     </div>
-    
-    <button class="download-btn" id="downloadBtn" disabled style="display: none;">
-        📥 Download Cards
-    </button>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -189,8 +158,17 @@
         const chatId = pathParts[pathParts.length - 1];
         const API_URL = 'https://practitioner-conducting-kitty-children.trycloudflare.com';
         
-        const downloadBtn = document.getElementById('downloadBtn');
         const mainContent = document.getElementById('mainContent');
+        
+        // Setup MainButton
+        tg.MainButton.setText('Select filters first');
+        tg.MainButton.disable();
+        tg.MainButton.show();
+        
+        tg.MainButton.onClick(() => {
+            console.log('MainButton clicked, sending:', filters);
+            tg.sendData(JSON.stringify(filters));
+        });
         
         if (chatId && chatId !== '' && chatId !== 'index.html') {
             fetch(`${API_URL}/api/data/${chatId}`)
@@ -295,28 +273,21 @@
                 statsNumber.textContent = count;
             }
             
-            // Update download button
+            // Update Telegram MainButton
             if (count > 0) {
-                downloadBtn.style.display = 'block';
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = `📥 Download ${count} Card${count !== 1 ? 's' : ''}`;
+                tg.MainButton.setText(`📥 Download ${count} Card${count !== 1 ? 's' : ''}`);
+                tg.MainButton.enable();
+                tg.MainButton.show();
             } else if (hasFilters) {
-                downloadBtn.style.display = 'block';
-                downloadBtn.disabled = true;
-                downloadBtn.textContent = '❌ No matching cards';
+                tg.MainButton.setText('❌ No matching cards');
+                tg.MainButton.disable();
+                tg.MainButton.show();
             } else {
-                downloadBtn.style.display = 'block';
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = `📥 Download All ${data.total} Cards`;
+                tg.MainButton.setText(`📥 Download All ${data.total} Cards`);
+                tg.MainButton.enable();
+                tg.MainButton.show();
             }
         }
-        
-        downloadBtn.addEventListener('click', () => {
-            if (!downloadBtn.disabled) {
-                console.log('Sending filters:', filters);
-                tg.sendData(JSON.stringify(filters));
-            }
-        });
     </script>
 </body>
 </html>
