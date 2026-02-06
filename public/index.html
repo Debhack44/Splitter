@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>𝙈𝙄𝙆𝙐</title>
+    <title>𝙈𝙄𝙆𝙐 Card Filter</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
@@ -87,30 +87,6 @@
         .filter-select option {
             background: #1a1a2e;
             color: #ffffff;
-        }
-        
-        .selected-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 16px;
-            min-height: 40px;
-        }
-        
-        .filter-tag {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .filter-tag-label {
-            opacity: 0.8;
-            font-size: 11px;
         }
         
         .stats-box {
@@ -221,9 +197,11 @@
                 .then(res => res.json())
                 .then(fetchedData => {
                     data = fetchedData;
+                    console.log('Data loaded:', data);
                     renderFilters();
                 })
                 .catch(err => {
+                    console.error('Failed to load:', err);
                     mainContent.innerHTML = '<div class="loading">⚠️ Failed to load data</div>';
                 });
         }
@@ -242,15 +220,15 @@
                 <div class="filter-section">
                     <div class="filter-label">🏦 Bank</div>
                     <select class="filter-select" id="bankSelect">
-                        <option value="">All Banks</option>
-                        ${data.banks.map(b => `<option value="${b}" ${filters.bank === b ? 'selected' : ''}>${b}</option>`).join('')}
+                        <option value="">All Banks (${data.banks.length})</option>
+                        ${data.banks.map(b => `<option value="${b.replace(/"/g, '&quot;')}" ${filters.bank === b ? 'selected' : ''}>${b}</option>`).join('')}
                     </select>
                 </div>
                 
                 <div class="filter-section">
                     <div class="filter-label">💳 Card Type</div>
                     <select class="filter-select" id="typeSelect">
-                        <option value="">All Types</option>
+                        <option value="">All Types (${data.types.length})</option>
                         ${data.types.map(t => `<option value="${t}" ${filters.type === t ? 'selected' : ''}>${t}</option>`).join('')}
                     </select>
                 </div>
@@ -258,7 +236,7 @@
                 <div class="filter-section">
                     <div class="filter-label">🌍 Country</div>
                     <select class="filter-select" id="countrySelect">
-                        <option value="">All Countries</option>
+                        <option value="">All Countries (${data.countries.length})</option>
                         ${data.countries.map(c => `<option value="${c}" ${filters.country === c ? 'selected' : ''}>${c}</option>`).join('')}
                     </select>
                 </div>
@@ -266,12 +244,10 @@
                 <div class="filter-section">
                     <div class="filter-label">⭐ Card Level</div>
                     <select class="filter-select" id="levelSelect">
-                        <option value="">All Levels</option>
+                        <option value="">All Levels (${data.levels.length})</option>
                         ${data.levels.map(l => `<option value="${l}" ${filters.level === l ? 'selected' : ''}>${l}</option>`).join('')}
                     </select>
                 </div>
-                
-                <div class="selected-filters" id="selectedFilters"></div>
             `;
             
             document.getElementById('bankSelect').addEventListener('change', (e) => {
@@ -298,17 +274,15 @@
         }
         
         function getMatchingCount() {
-            if (!data) return 0;
+            if (!data || !data.cardMeta) return data ? data.total : 0;
             
-            // This is an estimate - actual filtering happens on server
-            let total = 0;
-            for (let key in data.counts) {
-                const matchesBank = !filters.bank || key === filters.bank;
-                if (matchesBank) {
-                    total += data.counts[key];
-                }
-            }
-            return total;
+            return data.cardMeta.filter(card => {
+                if (filters.bank && card.bank !== filters.bank) return false;
+                if (filters.type && card.type !== filters.type) return false;
+                if (filters.country && card.country !== filters.country) return false;
+                if (filters.level && card.level !== filters.level) return false;
+                return true;
+            }).length;
         }
         
         function updateUI() {
@@ -322,23 +296,24 @@
             }
             
             // Update download button
-            if (hasFilters && count > 0) {
+            if (count > 0) {
                 downloadBtn.style.display = 'block';
                 downloadBtn.disabled = false;
-                downloadBtn.textContent = `📥 Download ${count} Cards`;
+                downloadBtn.textContent = `📥 Download ${count} Card${count !== 1 ? 's' : ''}`;
             } else if (hasFilters) {
                 downloadBtn.style.display = 'block';
                 downloadBtn.disabled = true;
                 downloadBtn.textContent = '❌ No matching cards';
             } else {
                 downloadBtn.style.display = 'block';
-                downloadBtn.disabled = true;
-                downloadBtn.textContent = 'Select filters to download';
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = `📥 Download All ${data.total} Cards`;
             }
         }
         
         downloadBtn.addEventListener('click', () => {
             if (!downloadBtn.disabled) {
+                console.log('Sending filters:', filters);
                 tg.sendData(JSON.stringify(filters));
             }
         });
